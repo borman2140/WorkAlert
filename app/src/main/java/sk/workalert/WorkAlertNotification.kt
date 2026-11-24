@@ -8,7 +8,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.AudioManager
 import android.os.Build
 import android.widget.RemoteViews
 
@@ -26,7 +25,7 @@ object WorkAlertNotification {
                 "WorkAlert",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Trvalé oznámenie WorkAlert s tlačidlami"
+                description = "WorkAlert notification controls"
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 setShowBadge(false)
                 enableVibration(false)
@@ -49,15 +48,6 @@ object WorkAlertNotification {
         }
 
         createChannel(context)
-
-        val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val current = audio.getStreamVolume(AudioManager.STREAM_ALARM)
-        val maximum = audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-        val status = if (audio.isVolumeFixed) {
-            "Hlasitosť budíka: bez zmeny"
-        } else {
-            "Hlasitosť budíka: $current/$maximum"
-        }
 
         val signalIntent = Intent(context, AlertActionReceiver::class.java).apply {
             action = ACTION_SIGNAL
@@ -87,13 +77,10 @@ object WorkAlertNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Custom notification layout: grey STOP on the left, red SIGNAL on the right.
         val compactView = RemoteViews(
             context.packageName,
             R.layout.notification_workalert
         ).apply {
-            setTextViewText(R.id.notification_title, "WorkAlert")
-            setTextViewText(R.id.notification_status, status)
             setOnClickPendingIntent(R.id.action_stop, stopPendingIntent)
             setOnClickPendingIntent(R.id.action_signal, signalPendingIntent)
         }
@@ -102,8 +89,6 @@ object WorkAlertNotification {
             context.packageName,
             R.layout.notification_workalert_expanded
         ).apply {
-            setTextViewText(R.id.notification_title, "WorkAlert")
-            setTextViewText(R.id.notification_status, status)
             setOnClickPendingIntent(R.id.action_stop, stopPendingIntent)
             setOnClickPendingIntent(R.id.action_signal, signalPendingIntent)
         }
@@ -116,9 +101,9 @@ object WorkAlertNotification {
         }
 
         val notification = builder
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.workalert_notification_small)
             .setContentTitle("WorkAlert")
-            .setContentText("Aktívny • $status")
+            .setContentText("WorkAlert active")
             .setCustomContentView(compactView)
             .setCustomBigContentView(expandedView)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
