@@ -14,12 +14,16 @@ import android.widget.FrameLayout
 import android.widget.TextView
 
 class MainActivity : Activity() {
+
     private val prefs by lazy {
         getSharedPreferences("workalert_session", Context.MODE_PRIVATE)
     }
 
+    private lateinit var volumeStatus: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         showOverLockScreen()
         startWorkAlertSession()
         buildScreen()
@@ -41,13 +45,14 @@ class MainActivity : Activity() {
     private fun startWorkAlertSession() {
         val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-        // Restore a previous session if Android killed the app unexpectedly.
+        // If an earlier app process was interrupted, restore its saved alarm volume first.
         if (prefs.getBoolean("session_active", false)) {
-            val previous = prefs.getInt("original_alarm_volume", -1)
-            if (previous >= 0) {
+            val saved = prefs.getInt("original_alarm_volume", -1)
+            if (saved >= 0) {
                 try {
-                    audio.setStreamVolume(AudioManager.STREAM_ALARM, previous, 0)
-                } catch (_: SecurityException) {}
+                    audio.setStreamVolume(AudioManager.STREAM_ALARM, saved, 0)
+                } catch (_: SecurityException) {
+                }
             }
             prefs.edit().clear().apply()
         }
@@ -59,12 +64,11 @@ class MainActivity : Activity() {
             .apply()
 
         try {
-            audio.setStreamVolume(
-                AudioManager.STREAM_ALARM,
-                audio.getStreamMaxVolume(AudioManager.STREAM_ALARM),
-                0
-            )
-        } catch (_: SecurityException) {}
+            val max = audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            audio.setStreamVolume(AudioManager.STREAM_ALARM, max, 0)
+        } catch (_: SecurityException) {
+            // The actual result is checked below and shown to the user.
+        }
     }
 
     private fun buildScreen() {
@@ -79,7 +83,6 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
         }
-
         root.addView(title, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -87,6 +90,20 @@ class MainActivity : Activity() {
         ).apply {
             topMargin = dp(30)
         })
+
+        volumeStatus = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Color.LTGRAY)
+            gravity = Gravity.CENTER
+        }
+        root.addView(volumeStatus, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+        ).apply {
+            bottomMargin = dp(18)
+        })
+        updateVolumeStatus()
 
         val signal = TextView(this).apply {
             text = "SIGNÁL"
@@ -96,13 +113,10 @@ class MainActivity : Activity() {
             isClickable = true
             isFocusable = true
             background = roundedBackground(Color.rgb(28, 132, 67), dp(24))
-
             setOnClickListener {
-                // Local sound test for now; remote colleague alerts are not connected yet.
                 AlertTone.play(this@MainActivity)
             }
         }
-
         root.addView(signal, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             dp(170),
@@ -118,13 +132,11 @@ class MainActivity : Activity() {
             isFocusable = true
             contentDescription = "Zatvoriť WorkAlert"
             background = roundedBackground(Color.argb(95, 150, 150, 150), dp(16))
-
             setOnClickListener {
                 endWorkAlertSession()
                 finish()
             }
         }
-
         root.addView(close, FrameLayout.LayoutParams(
             dp(46), dp(46), Gravity.TOP or Gravity.START
         ).apply {
@@ -135,22 +147,35 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
+    private fun updateVolumeStatus() {
+        val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val current = audio.getStreamVolume(AudioManager.STREAM_ALARM)
+        val maximum = audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+        val fixed = audio.isVolumeFixed
+
+        volumeStatus.text = when {
+            fixed -> "Hlasitosť budíka: zariadenie nepovoľuje zmenu"
+            current == maximum -> "Hlasitosť budíka: maximum ($current/$maximum)"
+            else -> "Hlasitosť budíka: $current/$maximum — maximum sa nepodarilo nastaviť"
+        }
+    }
+
     private fun endWorkAlertSession() {
         val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val previous = prefs.getInt("original_alarm_volume", -1)
+        val saved = prefs.getInt("original_alarm_volume", -1)
 
-        if (previous >= 0) {
+        if (saved >= 0) {
             try {
-                audio.setStreamVolume(AudioManager.STREAM_ALARM, previous, 0)
-            } catch (_: SecurityException) {}
+                audio.setStreamVolume(AudioManager.STREAM_ALARM, saved, 0)
+            } catch (_: SecurityException) {
+            }
         }
-
         prefs.edit().clear().apply()
     }
 
     @Deprecated("Use the X button to end WorkAlert mode.")
     override fun onBackPressed() {
-        // Keep the active screen open; the X button ends the session.
+        // WorkAlert mode is ended with the X button.
     }
 
     private fun roundedBackground(color: Int, radius: Int) =
