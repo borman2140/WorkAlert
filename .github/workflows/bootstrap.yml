@@ -1,0 +1,43 @@
+name: Unpack WorkAlert archive
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unpack project archive
+        run: |
+          set -e
+          ARCHIVE="WorkAlert-GitHub-Upload.zip"
+          test -f "$ARCHIVE" || {
+            echo "Archive $ARCHIVE was not found in the repository root."
+            exit 1
+          }
+          mkdir -p _workalert_unpack
+          unzip -o "$ARCHIVE" -d _workalert_unpack
+          test -d "_workalert_unpack/WorkAlert" || {
+            echo "Expected folder WorkAlert was not found inside the archive."
+            exit 1
+          }
+          cp -a _workalert_unpack/WorkAlert/. .
+          rm -rf _workalert_unpack "$ARCHIVE"
+
+      - name: Commit unpacked project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Add WorkAlert project files"
+          git push
