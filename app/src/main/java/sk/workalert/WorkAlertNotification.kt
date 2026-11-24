@@ -95,9 +95,9 @@ object WorkAlertNotification {
             setOnClickPendingIntent(R.id.action_signal, signalPendingIntent)
         }
 
-        val fullColorNotificationIcon = BitmapFactory.decodeResource(
+        val bellLargeIcon = BitmapFactory.decodeResource(
             context.resources,
-            R.drawable.workalert_notification_full
+            R.drawable.workalert_notification_bell_full
         )
 
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -109,7 +109,7 @@ object WorkAlertNotification {
 
         val notification = builder
             .setSmallIcon(R.drawable.workalert_notification_small)
-            .setLargeIcon(fullColorNotificationIcon)
+            .setLargeIcon(bellLargeIcon)
             .setColor(Color.rgb(220, 24, 36))
             .setContentTitle("WorkAlert")
             .setContentText("WorkAlert active")

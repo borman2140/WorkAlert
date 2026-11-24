@@ -10,15 +10,6 @@
     android:paddingBottom="14dp"
     android:background="#202631">
 
-    <ImageView
-        android:id="@+id/workalert_logo"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
-        android:layout_marginEnd="10dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/workalert_logo"
-        android:contentDescription="WorkAlert WA" />
-
     <TextView
         android:id="@+id/action_stop"
         android:layout_width="56dp"
