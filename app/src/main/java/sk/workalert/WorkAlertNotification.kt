@@ -8,6 +8,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Build
 import android.widget.RemoteViews
 
@@ -93,6 +95,11 @@ object WorkAlertNotification {
             setOnClickPendingIntent(R.id.action_signal, signalPendingIntent)
         }
 
+        val fullColorNotificationIcon = BitmapFactory.decodeResource(
+            context.resources,
+            R.drawable.workalert_notification_full
+        )
+
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(context, CHANNEL_ID)
         } else {
@@ -102,6 +109,8 @@ object WorkAlertNotification {
 
         val notification = builder
             .setSmallIcon(R.drawable.workalert_notification_small)
+            .setLargeIcon(fullColorNotificationIcon)
+            .setColor(Color.rgb(220, 24, 36))
             .setContentTitle("WorkAlert")
             .setContentText("WorkAlert active")
             .setCustomContentView(compactView)
