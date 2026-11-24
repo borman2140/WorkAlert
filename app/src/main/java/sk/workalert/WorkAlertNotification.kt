@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
+import android.widget.RemoteViews
 
 object WorkAlertNotification {
     private const val CHANNEL_ID = "workalert_status"
@@ -25,7 +26,7 @@ object WorkAlertNotification {
                 "WorkAlert",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Trvalé oznámenie WorkAlert s tlačidlom na odoslanie signálu"
+                description = "Trvalé oznámenie WorkAlert s tlačidlami"
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 setShowBadge(false)
                 enableVibration(false)
@@ -86,6 +87,27 @@ object WorkAlertNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Custom notification layout: grey STOP on the left, red SIGNAL on the right.
+        val compactView = RemoteViews(
+            context.packageName,
+            R.layout.notification_workalert
+        ).apply {
+            setTextViewText(R.id.notification_title, "WorkAlert")
+            setTextViewText(R.id.notification_status, status)
+            setOnClickPendingIntent(R.id.action_stop, stopPendingIntent)
+            setOnClickPendingIntent(R.id.action_signal, signalPendingIntent)
+        }
+
+        val expandedView = RemoteViews(
+            context.packageName,
+            R.layout.notification_workalert_expanded
+        ).apply {
+            setTextViewText(R.id.notification_title, "WorkAlert")
+            setTextViewText(R.id.notification_status, status)
+            setOnClickPendingIntent(R.id.action_stop, stopPendingIntent)
+            setOnClickPendingIntent(R.id.action_signal, signalPendingIntent)
+        }
+
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(context, CHANNEL_ID)
         } else {
@@ -97,25 +119,13 @@ object WorkAlertNotification {
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("WorkAlert")
             .setContentText("Aktívny • $status")
-            .setStyle(
-                Notification.BigTextStyle()
-                    .bigText("WorkAlert je aktívny.\n$status\nRozbaľ oznámenie a stlač SIGNÁL.")
-            )
+            .setCustomContentView(compactView)
+            .setCustomBigContentView(expandedView)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setOngoing(true)
             .setAutoCancel(false)
             .setContentIntent(openPendingIntent)
-            .addAction(
-                android.R.drawable.ic_lock_idle_alarm,
-                "SIGNÁL",
-                signalPendingIntent
-            )
-            .addAction(
-                android.R.drawable.ic_menu_close_clear_cancel,
-                "VYPNÚŤ",
-                stopPendingIntent
-            )
             .build()
 
         val manager = context.getSystemService(
