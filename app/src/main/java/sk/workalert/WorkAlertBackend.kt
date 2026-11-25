@@ -41,6 +41,13 @@ object WorkAlertBackend {
             .addOnFailureListener { onComplete(Result.failure(it)) }
     }
 
+    fun unlinkDevice(onComplete: (Result<Unit>) -> Unit) {
+        functions.getHttpsCallable("unlinkDevice")
+            .call()
+            .addOnSuccessListener { onComplete(Result.success(Unit)) }
+            .addOnFailureListener { onComplete(Result.failure(it)) }
+    }
+
     fun sendSignal(onComplete: (Result<Unit>) -> Unit = {}) {
         functions.getHttpsCallable("sendSignal")
             .call()

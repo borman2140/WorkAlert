@@ -2,6 +2,7 @@ package sk.workalert
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -110,6 +111,29 @@ class MainActivity : Activity() {
             }
         }
         root.addView(join, buttonParams().apply { topMargin = dp(12) })
+
+        val unlink = makeButton("ODPOJIŤ TELEFÓN", Color.rgb(105, 65, 65))
+        unlink.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Odpojiť telefóny?")
+                .setMessage("Spojenie medzi oboma telefónmi sa zruší. Potom bude možné vytvoriť nový párovací kód.")
+                .setNegativeButton("ZRUŠIŤ", null)
+                .setPositiveButton("ODPOJIŤ") { _, _ ->
+                    status.text = "Odpájam telefóny…"
+                    unlink.isEnabled = false
+                    WorkAlertBackend.unlinkDevice { result ->
+                        runOnUiThread {
+                            unlink.isEnabled = true
+                            result.onSuccess {
+                                status.text = "Telefóny boli odpojené. Môžeš vytvoriť nový kód."
+                                codeInput.text.clear()
+                            }.onFailure { showError(it) }
+                        }
+                    }
+                }
+                .show()
+        }
+        root.addView(unlink, buttonParams().apply { topMargin = dp(12) })
 
         val send = makeButton("ODOSLAŤ SIGNÁL", Color.rgb(180, 45, 45))
         send.setOnClickListener {
