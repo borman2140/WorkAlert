@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.ln
@@ -23,20 +24,36 @@ object AlertTone {
 
     fun play(context: Context) {
         playFourPulses()
-        vibrateOnly(context)
+        vibrateOnly(context.applicationContext)
     }
 
     fun vibrateOnly(context: Context) {
-        val vibrator = if (Build.VERSION.SDK_INT >= 31) {
-            context.getSystemService(VibratorManager::class.java).defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-        if (vibrator.hasVibrator()) {
+        try {
+            val appContext = context.applicationContext
+            val vibrator = if (Build.VERSION.SDK_INT >= 31) {
+                appContext.getSystemService(VibratorManager::class.java)?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                appContext.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            } ?: run {
+                Log.e("WorkAlertVibration", "Vibrator service is unavailable")
+                return
+            }
+            if (!vibrator.hasVibrator()) {
+                Log.e("WorkAlertVibration", "This device reports no vibrator")
+                return
+            }
             val timings = longArrayOf(0, 115, 385, 115, 385, 115, 385, 115)
             val amplitudes = intArrayOf(0, 255, 0, 255, 0, 255, 0, 255)
-            vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+            val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+            val attrs = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            vibrator.vibrate(effect, attrs)
+            Log.i("WorkAlertVibration", "Alarm-class vibration requested")
+        } catch (error: Exception) {
+            Log.e("WorkAlertVibration", "Vibration request failed", error)
         }
     }
 
