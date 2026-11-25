@@ -22,7 +22,7 @@ object WorkAlertBackend {
         functions.getHttpsCallable("createPairCode")
             .call()
             .addOnSuccessListener { result ->
-                val data = result.data as? Map<*, *>
+                val data = result.getData() as? Map<*, *>
                 val code = data?.get("code") as? String
                 val seconds = (data?.get("expiresInSeconds") as? Number)?.toInt() ?: 300
                 if (code.isNullOrBlank()) {
