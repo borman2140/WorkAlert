@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "114643676053",
+    "project_id": "workalert-adf04",
+    "storage_bucket": "workalert-adf04.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:114643676053:android:3e87d126a913c78b18a49c",
+        "android_client_info": {
+          "package_name": "sk.workalert"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyVn_V-cm75e2a0wxcXrMsY4Gd31gr01o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
