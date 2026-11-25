@@ -5,7 +5,7 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessaging
 
-/** Initializes a private anonymous Firebase identity and obtains this installation's FCM token. */
+/** Creates a stable anonymous identity and registers this installation's FCM token. */
 object FirebaseBootstrap {
     private const val TAG = "WorkAlertFirebase"
     private const val PREFS = "workalert_firebase"
@@ -16,25 +16,24 @@ object FirebaseBootstrap {
         val appContext = context.applicationContext
         val auth = FirebaseAuth.getInstance()
 
-        fun fetchTokenAndStore() {
+        fun fetchTokenAndRegister() {
             FirebaseMessaging.getInstance().token
                 .addOnSuccessListener { token ->
                     appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                        .edit()
-                        .putString(KEY_FCM_TOKEN, token)
-                        .apply()
-                    Log.i(TAG, "FCM token obtained and stored locally")
+                        .edit().putString(KEY_FCM_TOKEN, token).apply()
+                    WorkAlertBackend.registerDevice(token) { result ->
+                        result.onSuccess { Log.i(TAG, "Device registered with WorkAlert backend") }
+                            .onFailure { Log.e(TAG, "Device registration failed", it) }
+                    }
                 }
-                .addOnFailureListener { error ->
-                    Log.e(TAG, "Unable to obtain FCM token", error)
-                }
+                .addOnFailureListener { Log.e(TAG, "Unable to obtain FCM token", it) }
         }
 
         val currentUser = auth.currentUser
         if (currentUser != null) {
             appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit().putString(KEY_UID, currentUser.uid).apply()
-            fetchTokenAndStore()
+            fetchTokenAndRegister()
             return
         }
 
@@ -44,23 +43,24 @@ object FirebaseBootstrap {
                 if (uid != null) {
                     appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                         .edit().putString(KEY_UID, uid).apply()
-                    fetchTokenAndStore()
+                    fetchTokenAndRegister()
                     Log.i(TAG, "Anonymous Firebase sign-in completed")
                 } else {
                     Log.e(TAG, "Anonymous sign-in returned no user")
                 }
             }
-            .addOnFailureListener { error ->
-                Log.e(TAG, "Anonymous Firebase sign-in failed", error)
-            }
+            .addOnFailureListener { Log.e(TAG, "Anonymous sign-in failed", it) }
     }
 
     internal fun storeNewToken(context: Context, token: String) {
         context.applicationContext
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_FCM_TOKEN, token)
-            .apply()
-        Log.i(TAG, "FCM token refreshed and stored locally")
+            .edit().putString(KEY_FCM_TOKEN, token).apply()
+
+        if (FirebaseAuth.getInstance().currentUser != null) {
+            WorkAlertBackend.registerDevice(token) { result ->
+                result.onFailure { Log.e(TAG, "Refreshed token registration failed", it) }
+            }
+        }
     }
 }
