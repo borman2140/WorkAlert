@@ -20,6 +20,7 @@ class MainActivity : Activity() {
 
         WorkAlertNotification.createChannel(this)
         WorkAlertSession.start(this)
+        FirebaseBootstrap.start(this)
 
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
